@@ -3,7 +3,7 @@ import {ApiResponse} from "../utils/ApiResponse.js"
 import { asyncHandler } from "../utils/asyncHandler.js";
 import {uploadOnCloudinary,deleteFromCloudinary} from '../utils/cloudinary.js'
 import { User } from "../models/User.js";
-import { jwt } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 
 const registerUser = asyncHandler( async(req,res)=>{
     const {email,password,username} = req.body;
@@ -27,7 +27,7 @@ const registerUser = asyncHandler( async(req,res)=>{
         password:password,
         avatar:avatar?.url || ""
     })
-    const newUser = await User.findById(user?._id).select("-password -refreshtoken")
+    const newUser = await User.findById(user?._id).select("-password -refreshToken")
     if(!newUser){
         throw new ApiError(404,"new user could not be created")
     }
@@ -67,7 +67,7 @@ const loginUser= asyncHandler(async(req,res)=>{
     }
     const options = {
         httpOnly:true,
-        secure:true,
+        //secure:true,
         sameSite:"strict"
     }
 
@@ -82,7 +82,7 @@ const loginUser= asyncHandler(async(req,res)=>{
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
   const refreshToken = req.cookies?.refreshToken
-  if (!refreshToken) throw new ApiError("Refresh token missing")
+  if (!refreshToken) throw new ApiError(404,"Refresh token missing")
 
   const decoded = jwt.verify(
     refreshToken,
@@ -91,7 +91,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
   const user = await User.findById(decoded._id)
   if (!user || user.refreshToken !== refreshToken) {
-    throw new ApiError("Invalid refresh token")
+    throw new ApiError(404,"Invalid refresh token")
   }
 
   const accessToken = user.generateAccessToken()
@@ -134,7 +134,7 @@ const changePassword = asyncHandler( async(req,res)=>{
 })
 
 const updateUserAvatar = asyncHandler(async (req, res) => {
-  if (!req.file?.path) throw new ApiError("Avatar required")
+  if (!req.file?.path) throw new ApiError(404,"Avatar required")
 
   const user = await User.findById(req.user._id)
 
@@ -143,7 +143,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
   }
 
   const avatar = await uploadOnCloudinary(req.file.path)
-  if (!avatar?.url) throw new ApiError("Avatar upload failed")
+  if (!avatar?.url) throw new ApiError(404,"Avatar upload failed")
 
   user.avatar = avatar.url
   await user.save({ validateBeforeSave: false })

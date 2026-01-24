@@ -18,5 +18,10 @@ app.use(express.urlencoded({extended:true,limit:"16kb"}))
 app.use(express.static("public"))
 app.use(cookieParser());
 
+import roomRoutes from './routes/room.routes.js'
+import userRoutes from './routes/user.routes.js'
+
+app.use('/api/rooms',roomRoutes);
+app.use('/api/users',userRoutes);
 
 export {server}
