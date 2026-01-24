@@ -20,8 +20,10 @@ app.use(cookieParser());
 
 import roomRoutes from './routes/room.routes.js'
 import userRoutes from './routes/user.routes.js'
+import fileRoutes from './routes/file.routes.js'
 
 app.use('/api/rooms',roomRoutes);
 app.use('/api/users',userRoutes);
+app.use('/api/files',fileRoutes)
 
 export {server}
