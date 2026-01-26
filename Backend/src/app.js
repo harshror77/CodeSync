@@ -3,11 +3,23 @@ import http from "http"
 import cors from "cors"
 import cookieParser from 'cookie-parser'
 import dotenv from "dotenv"
+import {Server as SocketServer} from 'socket.io'
+import {handleSocket} from './socket.js'
 
 dotenv.config({path:'./.env'});
 
 const app = express();
 const server = http.createServer(app);
+
+const io = new SocketServer(server,{
+    cors:{
+        origin:process.env.CORS_ORIGIN,
+        methods:['GET','POST'],
+        credentials:true
+    }
+})
+app.set('io',io);
+handleSocket(io);
 
 app.use(cors({
     origin:process.env.CORS_ORIGIN,
