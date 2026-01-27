@@ -1,5 +1,5 @@
 import { Router } from "express"
-import { verifyJWT } from "../middleware/auth.middleware.js"
+import { verifyJWT } from "../middleware/auth.js"
 import { getRoomFiles, createFileOrFolder, updateFile, deleteFileOrFolder, getFileContent } from "../controllers/file.controller.js"
 
 const router = Router();

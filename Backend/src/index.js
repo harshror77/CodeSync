@@ -1,6 +1,6 @@
 import dotenv from 'dotenv'
-import {server} from './app.js'
 import connectDB from './db/index.js'
+import {server} from './app.js'
 import yjsServer from './yjs-server.js';
 dotenv.config({path:'./.env'});
 

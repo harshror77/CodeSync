@@ -1,5 +1,5 @@
 import {saveMessage} from './controllers/chat.controller.js'
-import { roomService } from './services/roomService.js';
+import { roomService } from './services/room.service.js';
 export const handleSocket = (io)=>{
     io.on('connection',(socket)=>{
         socket.on('join-room',async({roomId,userId,username})=>{

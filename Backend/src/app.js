@@ -2,12 +2,11 @@ import express from "express"
 import http from "http"
 import cors from "cors"
 import cookieParser from 'cookie-parser'
-import dotenv from "dotenv"
 import {Server as SocketServer} from 'socket.io'
 import {handleSocket} from './socket.js'
-
+import {handleCodeExecutionSocket} from './exec/index.js'
+import dotenv from 'dotenv'
 dotenv.config({path:'./.env'});
-
 const app = express();
 const server = http.createServer(app);
 
@@ -20,6 +19,7 @@ const io = new SocketServer(server,{
 })
 app.set('io',io);
 handleSocket(io);
+handleCodeExecutionSocket(io);
 
 app.use(cors({
     origin:process.env.CORS_ORIGIN,
@@ -33,9 +33,11 @@ app.use(cookieParser());
 import roomRoutes from './routes/room.routes.js'
 import userRoutes from './routes/user.routes.js'
 import fileRoutes from './routes/file.routes.js'
+import chatRoutes from './routes/chat.routes.js'
 
 app.use('/api/rooms',roomRoutes);
 app.use('/api/users',userRoutes);
-app.use('/api/files',fileRoutes)
+app.use('/api/files',fileRoutes);
+app.use('/api/chat',chatRoutes);
 
 export {server}

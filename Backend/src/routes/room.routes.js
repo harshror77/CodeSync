@@ -8,7 +8,7 @@ import {
     getRoomUsers,
     getUserRooms,
     executeCode
-} from "../controllers/roomController.js"
+} from "../controllers/room.controller.js"
 
 const router = Router()
 router.use(verifyJWT) 
