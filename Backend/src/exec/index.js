@@ -3,12 +3,14 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export const handleCodeExecutionSocket = (io) => {
-    const PISTON_API = process.env.PISTON_API;
+    const JDOODLE_CLIENT_ID = process.env.JDOODLE_CLIENT_ID;
+    const JDOODLE_CLIENT_SECRET = process.env.JDOODLE_CLIENT_SECRET;
+
     const languageConfigs = {
-        javascript: { language: 'javascript', version: '*' },
-        python: { language: 'python', version: '*' },
-        c: { language: 'c', version: '*' },
-        cpp: { language: 'cpp', version: '*' }
+        javascript: { language: 'nodejs', versionIndex: '4' },
+        python: { language: 'python3', versionIndex: '4' },
+        c: { language: 'c', versionIndex: '4' },
+        cpp: { language: 'cpp17', versionIndex: '1' }
     };
 
     const executeCode = async (socket, code, language, sessionId) => {
@@ -16,49 +18,37 @@ export const handleCodeExecutionSocket = (io) => {
             const config = languageConfigs[language];
             if (!config) throw new Error(`Unsupported language: ${language}`);
 
-            socket.emit('code-execution-progress', { status: '🚀 Executing...', sessionId });
+            socket.emit('code-execution-progress', { status: 'Executing...', sessionId });
 
-            const response = await fetch(PISTON_API, {
+            const body = JSON.stringify({
+                script: code,
+                language: config.language,
+                versionIndex: config.versionIndex,
+                clientId: JDOODLE_CLIENT_ID,
+                clientSecret: JDOODLE_CLIENT_SECRET
+            });
+
+            const response = await fetch("https://api.jdoodle.com/v1/execute", {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    language: config.language,
-                    version: config.version,
-                    files: [{ content: code }]
-                })
+                body
             });
 
             const result = await response.json();
-            
-            // 1. Check for API-level errors
-            if (result.message) {
-                throw new Error(`API Error: ${result.message}`);
+
+            if (response.status !== 200) {
+                throw new Error(result.error || 'JDoodle API Error');
             }
 
-            // 2. THE FIX: Handle C++ Compilation Errors
-            // If compilation fails, Piston returns 'compile' but omits 'run'
-            if (result.compile && result.compile.code !== 0) {
-                return socket.emit('code-execution-result', {
-                    output: result.compile.output || result.compile.stderr || 'Compilation failed',
-                    success: false,
-                    sessionId,
-                    timestamp: new Date().toISOString()
-                });
-            }
-
-            // 3. Handle standard execution (JS, Python, or successfully compiled C++)
-            if (!result.run) {
-                throw new Error('Invalid response from execution server. No run data.');
-            }
-            
             socket.emit('code-execution-result', {
-                // Use .output first, as it safely combines stdout and stderr
-                output: result.run.output || result.run.stdout || result.run.stderr || 'No output',
-                success: result.run.code === 0,
+                output: result.output || 'No output',
+                success: true, 
                 sessionId,
                 timestamp: new Date().toISOString()
             });
+
         } catch (error) {
+            console.error("JDoodle Error:", error.message);
             socket.emit('code-execution-error', {
                 message: error.message || 'Execution failed',
                 sessionId
@@ -69,7 +59,7 @@ export const handleCodeExecutionSocket = (io) => {
     io.of('/code-execution').on('connection', (socket) => {
         socket.on('execute-code', async ({ code, language, sessionId }) => {
             if (!code?.trim()) {
-                return socket.emit('code-execution-error', { message: '❌ No code provided' });
+                return socket.emit('code-execution-error', { message: ' No code provided' });
             }
             await executeCode(socket, code, language, sessionId);
         });
