@@ -3,7 +3,6 @@ import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js' 
 import { ApiResponse } from '../utils/ApiResponse.js'
 
-
 const getRoomFiles = asyncHandler(async(req, res) => {
     const files = await File.find({ roomId: req.params.roomId })
         .sort({ type: 1, name: 1 });
@@ -30,11 +29,14 @@ const createFileOrFolder = asyncHandler(async(req, res) => {
 })
 
 const updateFile = asyncHandler(async(req, res) => {
-    const { roomId } = req.params;
-    const { path, content } = req.body; 
+    const { roomId, path } = req.params; // Path is now taken from the URL
+    const { content } = req.body; 
+
+    // We decode the path in case it was URL-encoded (like %2Fharsh.c)
+    const decodedPath = decodeURIComponent(path);
 
     const file = await File.findOneAndUpdate(
-        { roomId, path, type: 'file' },
+        { roomId, path: decodedPath, type: 'file' },
         { 
             content, 
             $set: { updatedAt: new Date() } 
@@ -55,6 +57,9 @@ const deleteFileOrFolder = asyncHandler(async(req, res) => {
 
     if (!path) throw new ApiError(400, "Path is required");
 
+    // Helper to escape regex characters
+    const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    
     const safePath = escapeRegExp(path);
     await File.deleteMany({
         roomId,
@@ -72,7 +77,7 @@ const getFileContent = asyncHandler(async(req, res) => {
     const { path } = req.query
     if(!path) throw new ApiError(400, "Path is required");
 
-    const file = await File.findOne({ roomId: req.params.roomId, path: path }) 
+    const file = await File.findOne({ roomId: req.params.roomId, path: path })
     if (!file) throw new ApiError(404, "File not found")
     
     return res.status(200).json(

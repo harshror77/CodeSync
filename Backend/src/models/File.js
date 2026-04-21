@@ -2,8 +2,8 @@ import mongoose from "mongoose"
 
 const fileSchema = new mongoose.Schema({
     roomId:{
-        type:mongoose.Schema.Types.ObjectId,
-        ref:'Room',
+        type:String,
+        required:true,
         index:true
     },
     name:{

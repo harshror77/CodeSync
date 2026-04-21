@@ -3,7 +3,9 @@ const DB_NAME = "CodeSync"
 
 const connectDB = async()=>{
     try{
-        await mongoose.connect(`${process.env.MONGODB_URI}/${DB_NAME}`)
+        await mongoose.connect(`${process.env.MONGODB_URI}/${DB_NAME}`,{
+            family:4
+        })
         console.log("Mongodb connected");
     }
     catch(e){

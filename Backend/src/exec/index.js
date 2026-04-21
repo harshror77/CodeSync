@@ -4,12 +4,11 @@ dotenv.config();
 
 export const handleCodeExecutionSocket = (io) => {
     const PISTON_API = process.env.PISTON_API;
-
     const languageConfigs = {
-        javascript: { language: 'javascript', version: '18.15.0' },
-        python: { language: 'python', version: '3.10.0' },
-        c: { language: 'c', version: '10.2.0' },
-        cpp: { language: 'cpp', version: '10.2.0' }
+        javascript: { language: 'javascript', version: '*' },
+        python: { language: 'python', version: '*' },
+        c: { language: 'c', version: '*' },
+        cpp: { language: 'cpp', version: '*' }
     };
 
     const executeCode = async (socket, code, language, sessionId) => {
@@ -31,8 +30,30 @@ export const handleCodeExecutionSocket = (io) => {
 
             const result = await response.json();
             
+            // 1. Check for API-level errors
+            if (result.message) {
+                throw new Error(`API Error: ${result.message}`);
+            }
+
+            // 2. THE FIX: Handle C++ Compilation Errors
+            // If compilation fails, Piston returns 'compile' but omits 'run'
+            if (result.compile && result.compile.code !== 0) {
+                return socket.emit('code-execution-result', {
+                    output: result.compile.output || result.compile.stderr || 'Compilation failed',
+                    success: false,
+                    sessionId,
+                    timestamp: new Date().toISOString()
+                });
+            }
+
+            // 3. Handle standard execution (JS, Python, or successfully compiled C++)
+            if (!result.run) {
+                throw new Error('Invalid response from execution server. No run data.');
+            }
+            
             socket.emit('code-execution-result', {
-                output: result.run.stdout || result.run.stderr || 'No output',
+                // Use .output first, as it safely combines stdout and stderr
+                output: result.run.output || result.run.stdout || result.run.stderr || 'No output',
                 success: result.run.code === 0,
                 sessionId,
                 timestamp: new Date().toISOString()
