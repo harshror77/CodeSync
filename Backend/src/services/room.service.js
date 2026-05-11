@@ -1,4 +1,5 @@
 import { Room } from "../models/Room.js"
+import { ApiError} from "../utils/ApiError.js"
 
 class RoomService {
 

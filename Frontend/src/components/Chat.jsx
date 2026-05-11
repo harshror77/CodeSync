@@ -4,11 +4,9 @@ import axios from 'axios';
 
 const api = axios.create({ baseURL: import.meta.env.VITE_BACKEND_URL, withCredentials: true });
 
-// Pass the 'socket' instance from the parent CodeEditor
 const Chat = ({ roomId, userId, username, socket }) => {
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
-    const [roomUsersCount, setRoomUsersCount] = useState(0); // Renamed to avoid confusion with the list
     const [typing, setTyping] = useState(null);
     const [isOpen, setIsOpen] = useState(false);
     const [isMinimized, setIsMinimized] = useState(false);
@@ -24,29 +22,21 @@ const Chat = ({ roomId, userId, username, socket }) => {
             .catch(() => setMessages([]));
     }, [roomId]);
 
-    // LISTENERS ONLY - No new connection here
     useEffect(() => {
         if (!socket) return;
 
-        const handleRoomJoined = data => setRoomUsersCount(data.roomUsers);
-        const handleUserLeft = data => setRoomUsersCount(data.roomUsers);
         const handleTyping = data => data.userId !== userId && setTyping(data.isTyping ? data.username : null);
         const handleNewMessage = msg => {
             setMessages(prev => [...prev, msg]);
             if (!isOpen || isMinimized) setUnread(c => c + 1);
         };
 
-        socket.on('room-joined', handleRoomJoined);
-        socket.on('user-left', handleUserLeft);
         socket.on('user-typing', handleTyping);
         socket.on('new-message', handleNewMessage);
 
         return () => {
-            // Clean up listeners, but DO NOT disconnect the socket
-            socket.off('room-joined', handleRoomJoined);
-            socket.off('user-left', handleUserLeft);
             socket.off('user-typing', handleTyping);
-            socket.on('new-message', handleNewMessage);
+            socket.off('new-message', handleNewMessage); // Fixed the previous listener bug
         };
     }, [socket, userId, isOpen, isMinimized]);
 
@@ -74,7 +64,8 @@ const Chat = ({ roomId, userId, username, socket }) => {
 
             <div className={`fixed bottom-4 right-4 z-50 bg-white rounded-lg shadow-2xl border border-gray-200 flex flex-col transition-all duration-300 ${!isOpen ? 'scale-0 opacity-0 translate-y-10' : 'scale-100 opacity-100 translate-y-0'} ${isMinimized ? 'w-64 h-12' : 'w-80 h-96'}`}>
                 <div className="bg-blue-600 text-white p-3 flex justify-between items-center cursor-pointer rounded-t-lg" onClick={() => isMinimized && setIsMinimized(false)}>
-                    <div className="flex items-center gap-2 text-sm font-semibold"><Users size={16}/> Chat ({roomUsersCount})</div>
+                    {/* Count removed from the header here */}
+                    <div className="flex items-center gap-2 text-sm font-semibold"><MessageCircle size={16}/> Chat</div>
                     <div className="flex gap-2">
                         <Minimize2 size={14} className="cursor-pointer hover:text-blue-200" onClick={(e) => { e.stopPropagation(); setIsMinimized(!isMinimized); }}/>
                         <X size={14} className="cursor-pointer hover:text-blue-200" onClick={(e) => { e.stopPropagation(); setIsOpen(false); }}/>

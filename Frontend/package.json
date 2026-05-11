@@ -10,8 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@codemirror/autocomplete": "^6.20.2",
     "@codemirror/basic-setup": "^0.20.0",
-    "@codemirror/commands": "^6.8.1",
+    "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-cpp": "^6.0.2",
     "@codemirror/lang-html": "^6.4.9",
     "@codemirror/lang-javascript": "^6.2.4",

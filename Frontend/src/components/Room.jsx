@@ -76,24 +76,9 @@ const Room = () => {
         setError('');
 
         try {
-            const checkResponse = await api.get(`/rooms/${roomId.trim()}/check`);
-            const checkData = checkResponse.data;
-            if (!checkData.success) {
-                setError('Room not found');
-                setLoading(false);
-                return;
-            }
-
-            if (!checkData.data.available) {
-                setError(checkData.data.reason || 'Room is not available');
-                setLoading(false);
-                return;
-            }
-
             const joinResponse = await api.post(`/rooms/${roomId.trim()}/join`, {
-                userId: userId,
-                userName: userName
-            });
+                username: userName  
+            }, { withCredentials: true });
 
             const joinData = joinResponse.data;
             console.log(joinData);
