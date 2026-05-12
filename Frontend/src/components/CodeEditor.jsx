@@ -20,6 +20,16 @@ import { Play, Save, LogOut, Copy, Check, Terminal as TerminalIcon, Users } from
 
 const api = axios.create({ baseURL: import.meta.env.VITE_BACKEND_URL, withCredentials: true });
 
+// --- Cursor color helpers ---
+const USER_COLORS = ['#30bced', '#6eeb83', '#ffbc42', '#ee6352', '#9ac2c9', '#8acb88', '#c06c84', '#f7b731'];
+
+const getUserColor = (id = '') => {
+    let hash = 0;
+    for (let i = 0; i < id.length; i++) hash = id.charCodeAt(i) + ((hash << 5) - hash);
+    return USER_COLORS[Math.abs(hash) % USER_COLORS.length];
+};
+// ---------------------------
+
 const CodeEditor = () => {
     const { roomId, userId } = useParams();
     const navigate = useNavigate();
@@ -80,6 +90,13 @@ const CodeEditor = () => {
             document: ydoc,
         });
 
+        // Set local user info so other clients can render this user's cursor
+        provider.awareness.setLocalStateField('user', {
+            name: userInfo?.username || 'Anonymous',
+            color: getUserColor(userId),
+            colorLight: getUserColor(userId) + '40',
+        });
+
         const ytext = ydoc.getText('codemirror');
         ytextRef.current = ytext;
 
@@ -97,8 +114,8 @@ const CodeEditor = () => {
             doc: ytext.toString(),
             extensions: [
                 basicSetup,
-                keymap.of([indentWithTab]), // Added Tab Indentation
-                autocompletion(),           // Added Autocomplete
+                keymap.of([indentWithTab]),
+                autocompletion(),
                 getLangExp(),
                 yCollab(ytext, provider.awareness),
                 EditorView.theme({ "&": { height: "100%" }, ".cm-scroller": { overflow: "auto" } }, { dark: true })
@@ -181,7 +198,10 @@ const CodeEditor = () => {
                         <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
                             {roomUsers.map((user) => (
                                 <div key={user.userId} className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-800 px-2 py-1 rounded-md">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                    <div
+                                        className="w-1.5 h-1.5 rounded-full animate-pulse"
+                                        style={{ backgroundColor: getUserColor(user.userId) }}
+                                    />
                                     <span className="text-[11px] text-zinc-300">{user.username} {user.userId === userId && "(You)"}</span>
                                 </div>
                             ))}
