@@ -7,7 +7,6 @@ import {
     deleteRoom,
     getRoomUsers,
     getUserRooms,
-    executeCode
 } from "../controllers/room.controller.js"
 
 const router = Router()
@@ -19,6 +18,5 @@ router.route('/:roomId/join').post(joinRoom)
 router.route('/:roomId/leave').post(leaveRoom)
 router.route('/:roomId/delete').delete(deleteRoom)
 router.route('/:roomId/users').get(getRoomUsers) 
-router.route("/execute").post(executeCode)
 
 export default router;

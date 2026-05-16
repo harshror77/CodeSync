@@ -68,36 +68,6 @@ const getRoomUsers = asyncHandler(async (req, res) => {
 })
 
 
-const executeCode = asyncHandler(async (req, res) => {
-    const { language, code } = req.body
-    if (!language || !code) {
-        throw new ApiError(400, "Language and code are required")
-    }
-
-    const langMap = {
-        javascript: "js",
-        python: "py",
-        c: "c",
-        cpp: "cpp"
-    }
-
-    const { data } = await axios.post(
-        "https://emkc.org/api/v2/piston/execute",
-        {
-            language: langMap[language] || language,
-            version: "*",
-            files: [{ content: code }]
-        }
-    )
-
-    return res.status(200).json(
-        new ApiResponse(200, {
-            output: data.run.stdout || "",
-            error: data.run.stderr || ""
-        }, "Code executed")
-    )
-})
-
 export {
     createRoom,
     joinRoom,
@@ -105,5 +75,4 @@ export {
     deleteRoom,
     getUserRooms,
     getRoomUsers,
-    executeCode
 }
