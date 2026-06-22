@@ -1,7 +1,7 @@
 import { Router } from "express"
 import { registerUser, loginUser, logoutUser, changePassword, updateProfile, getCurrentUser, deleteAccount, refreshAccessToken } from "../controllers/user.controller.js"
 import { verifyJWT } from './../middleware/auth.js';
-import { strictRateLimit } from "../middleware/rateLimiter.js"; 
+import { strictRateLimit } from "../middleware/RateLimiter.js"; 
 
 const router = Router();
 
