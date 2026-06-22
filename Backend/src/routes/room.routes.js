@@ -8,11 +8,12 @@ import {
     getRoomUsers,
     getUserRooms,
 } from "../controllers/room.controller.js"
+import {strictRateLimit} from '../middleware/RateLimiter.js'
 
 const router = Router()
 router.use(verifyJWT) 
 
-router.route('/create').post(createRoom)
+router.route('/create').post(strictRateLimit,createRoom)
 router.route('/getUserRooms').get(getUserRooms)
 router.route('/:roomId/join').post(joinRoom)
 router.route('/:roomId/leave').post(leaveRoom)

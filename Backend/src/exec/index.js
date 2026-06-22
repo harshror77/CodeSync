@@ -1,6 +1,12 @@
 import fetch from 'node-fetch';
 import dotenv from 'dotenv';
+import { RateLimiterClient } from '@harshror77/rate-limiter-sdk';
 dotenv.config();
+
+const rateLimiter = new RateLimiterClient({
+    serviceUrl: process.env.RATE_LIMITER_SERVICE_URL || 'http://localhost:3000',
+    apiKey: process.env.RATE_LIMITER_API_KEY || 'free-test-key'
+});
 
 export const handleCodeExecutionSocket = (io) => {
     const JDOODLE_CLIENT_ID = process.env.JDOODLE_CLIENT_ID;
@@ -61,6 +67,21 @@ export const handleCodeExecutionSocket = (io) => {
             if (!code?.trim()) {
                 return socket.emit('code-execution-error', { message: ' No code provided' });
             }
+            try {
+                const userIp = socket.handshake.address || socket.handshake.headers['x-forwarded-for'] || '127.0.0.1';
+                const limitResult = await rateLimiter.check({ ip: userIp });
+
+                if (!limitResult.allowed) {
+                    const retrySecs = Math.ceil((limitResult.resetAt - Date.now()) / 1000);
+                    return socket.emit('code-execution-error', { 
+                        message: `Rate limit exceeded. Please try again in ${retrySecs} seconds.`,
+                        sessionId 
+                    });
+                }
+            } catch (err) {
+                console.warn('[RateShield] Warning: Service unreachable, failing open.');
+            }
+
             await executeCode(socket, code, language, sessionId);
         });
     });

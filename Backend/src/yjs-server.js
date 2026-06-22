@@ -6,31 +6,22 @@ const yjsServer = new Server({
     name:'code-sync',
     debounce:200,
 
-    async onLoadDocument(data){
-        const [roomId,filePath] = data.documentName.split('::')
-        if(!filePath) return data.document;
-        try{
-            const file = await File.findOne({roomId,path:filePath});
-            if(file && file.content){
-                data.document.getText('codemirror').insert(0,file.content);
-            }
-        }catch(e){
-            console.error(`Load Error: ${e.message}`)
-        }
-        return data.document;
-    },
 
     async onChange(data){
-        const [roomId,filePath] = data.documentName.split('::')
-        if(!filePath) return;
-        try{
+        const [roomId, filePath] = data.documentName.split('::')
+        if (!filePath) return;
+        try {
             const currContent = data.document.getText('codemirror').toString();
+            if (currContent.length === 0) {
+                console.warn(`Skipping save — empty content for ${roomId}::${filePath}`);
+                return;
+            }
             await File.findOneAndUpdate(
-                {roomId,path:filePath},
-                {content:currContent},
-                {upsert:false}
+                { roomId, path: filePath },
+                { content: currContent },
+                { upsert: false }
             );
-        }catch(e){
+        } catch (e) {
             console.error(`Save Error: ${e.message}`);
         }
     }

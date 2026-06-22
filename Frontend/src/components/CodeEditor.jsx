@@ -20,15 +20,15 @@ import { Play, Save, LogOut, Copy, Check, Terminal as TerminalIcon, Users } from
 
 const api = axios.create({ baseURL: import.meta.env.VITE_BACKEND_URL, withCredentials: true });
 
-// --- Cursor color helpers ---
-const USER_COLORS = ['#30bced', '#6eeb83', '#ffbc42', '#ee6352', '#9ac2c9', '#8acb88', '#c06c84', '#f7b731'];
-
 const getUserColor = (id = '') => {
     let hash = 0;
     for (let i = 0; i < id.length; i++) hash = id.charCodeAt(i) + ((hash << 5) - hash);
-    return USER_COLORS[Math.abs(hash) % USER_COLORS.length];
+    const h = Math.abs(hash) % 360;
+    return {
+        color: `hsl(${h}, 70%, 60%)`,
+        colorLight: `hsla(${h}, 70%, 60%, 0.4)`
+    };
 };
-// ---------------------------
 
 const CodeEditor = () => {
     const { roomId, userId } = useParams();
@@ -38,9 +38,13 @@ const CodeEditor = () => {
     const editorRef = useRef(null);
     const viewRef = useRef(null);
     const providerRef = useRef(null);
+    const ydocRef = useRef(null);
     const ytextRef = useRef(null);
     const socketRef = useRef(null);
     const execSocketRef = useRef(null);
+    
+    // THE LOCK: Prevents React Strict mode from double-inserting code
+    const isInitializedRef = useRef(false);
 
     const [currentFile, setCurrentFile] = useState(null);
     const [language, setLanguage] = useState('javascript');
@@ -79,29 +83,51 @@ const CodeEditor = () => {
         };
     }, [roomId, userId, userInfo?.username]);
 
+    useEffect(() => {
+        return () => {
+            providerRef.current?.disconnect();
+            providerRef.current?.destroy();
+            viewRef.current?.destroy();
+            ydocRef.current?.destroy();
+        };
+    }, []);
+
     const setupSync = (docName, initialContent) => {
+        providerRef.current?.disconnect();
         providerRef.current?.destroy();
         viewRef.current?.destroy();
+        ydocRef.current?.destroy();
+
+        // Reset the lock when switching files
+        isInitializedRef.current = false;
 
         const ydoc = new Y.Doc();
+        ydocRef.current = ydoc;
+
         const provider = new HocuspocusProvider({
             url: import.meta.env.VITE_BACKEND_WS || 'ws://localhost:1234',
             name: docName,
             document: ydoc,
         });
 
-        // Set local user info so other clients can render this user's cursor
+        const userTheme = getUserColor(userInfo?.username || userId);
         provider.awareness.setLocalStateField('user', {
             name: userInfo?.username || 'Anonymous',
-            color: getUserColor(userId),
-            colorLight: getUserColor(userId) + '40',
+            color: userTheme.color,
+            colorLight: userTheme.colorLight,
         });
 
         const ytext = ydoc.getText('codemirror');
         ytextRef.current = ytext;
 
         provider.on('synced', () => {
-            if (ytext.toString().length === 0 && initialContent) ytext.insert(0, initialContent);
+            if (ytext.toString().length === 0 && initialContent && !isInitializedRef.current) {
+                isInitializedRef.current = true;
+                ytext.insert(0, initialContent);
+                console.log('[Sync] inserted initialContent');
+            } else {
+                console.log('[Sync] SKIPPED insert');
+            }
         });
 
         const getLangExp = () => {
@@ -131,9 +157,9 @@ const CodeEditor = () => {
         setCurrentFile(file);
         try {
             const { data } = await api.get(`/files/${roomId}/content`, { params: { path: file.path } });
-            setupSync(`${roomId}::${file.path}`, data.content || '');
+            setupSync(`${roomId}::${file.path}`, data.data.content || '');
             log(`Opened ${file.name}`);
-        } catch (err) {
+        } catch  {
             log(`Error loading file`, 'error');
         }
     };
@@ -146,7 +172,12 @@ const CodeEditor = () => {
             await api.put(`/files/${roomId}/update/${encodeURIComponent(currentFile.path)}`, { content, language });
             log(`Saved ${currentFile.name}`, 'success');
         } catch (err) {
-            log(`Save failed`, 'error');
+            if (err.response?.status === 429) {
+                const exactReason = err.response?.data?.message || err.response?.data?.error || "Rate limit exceeded";
+                log(`[RateShield] Blocked: ${exactReason}`, 'error');
+            } else {
+                log(`Save failed: ${err.message}`, 'error');
+            }
         } finally {
             setStatus(s => ({ ...s, saving: false }));
         }
@@ -200,7 +231,7 @@ const CodeEditor = () => {
                                 <div key={user.userId} className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-800 px-2 py-1 rounded-md">
                                     <div
                                         className="w-1.5 h-1.5 rounded-full animate-pulse"
-                                        style={{ backgroundColor: getUserColor(user.userId) }}
+                                        style={{ backgroundColor: getUserColor(user.username || user.userId).color }}
                                     />
                                     <span className="text-[11px] text-zinc-300">{user.username} {user.userId === userId && "(You)"}</span>
                                 </div>
