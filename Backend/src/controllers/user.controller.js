@@ -64,7 +64,8 @@ const loginUser = asyncHandler(async (req, res) => {
     }
     const options = {
         httpOnly: true,
-        sameSite: "strict"
+        sameSite: "none",
+        secure:true
     }
 
     return res
@@ -92,8 +93,9 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
     const accessToken = user.generateAccessToken()
 
+    const options = { httpOnly: true, secure: true, sameSite: "none" };
     return res
-        .cookie("accessToken", accessToken, { httpOnly: true })
+        .cookie("accessToken", accessToken, options)
         .json(new ApiResponse(200, {}, "Token refreshed"))
 });
 
@@ -105,7 +107,8 @@ const logoutUser = asyncHandler(async (req, res) => {
     )
     const options = {
         httpOnly: true,
-        secure: true
+        secure: true,
+        sameSite:"none"
     }
 
     return res
@@ -149,11 +152,16 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 });
 
 const deleteAccount = asyncHandler(async (req, res) => {
+    const options = {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none"
+    }
     await User.findByIdAndDelete(req.user._id)
 
     res
-        .clearCookie("accessToken")
-        .clearCookie("refreshToken")
+        .clearCookie("accessToken",options)
+        .clearCookie("refreshToken",options)
         .status(200)
         .json(new ApiResponse(200, {}, "Account deleted successfully"))
 });
