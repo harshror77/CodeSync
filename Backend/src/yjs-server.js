@@ -1,13 +1,18 @@
-import {Server} from '@hocuspocus/server'
-import {File} from './models/File.js'
+import { Server } from '@hocuspocus/server';
+import { File } from './models/File.js';
+import connectDB from './db/index.js';
+import dotenv from 'dotenv';
+
+dotenv.config({ path: './.env' });
+
+connectDB().catch(e => console.log(`DB Error: ${e}`));
 
 const yjsServer = new Server({
-    port:1234,
-    name:'code-sync',
-    debounce:200,
+    port: process.env.YJS_PORT || 1234, 
+    name: 'code-sync',
+    debounce: 200,
 
-
-    async onChange(data){
+    async onChange(data) {
         const [roomId, filePath] = data.documentName.split('::')
         if (!filePath) return;
         try {
@@ -25,6 +30,8 @@ const yjsServer = new Server({
             console.error(`Save Error: ${e.message}`);
         }
     }
-})
+});
 
-export default yjsServer;
+yjsServer.listen().then(({ port }) => {
+    console.log(`YJS Microservice running on port ${port}`);
+});

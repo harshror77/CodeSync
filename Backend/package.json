@@ -4,7 +4,9 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "dev": " nodemon src/index.js"
+    "start:api": "node src/index.js",
+    "start:yjs": "node src/yjs-server.js",
+    "dev": "nodemon src/index.js"
   },
   "keywords": [],
   "author": "",
