@@ -6,9 +6,9 @@ import dotenv from 'dotenv';
 dotenv.config({ path: './.env' });
 
 connectDB().catch(e => console.log(`DB Error: ${e}`));
-
+const PORT = process.env.YJS_PORT || 1234;
 const yjsServer = new Server({
-    port: process.env.YJS_PORT || 1234, 
+    port: parseInt(PORT) || 1234, 
     name: 'code-sync',
     debounce: 200,
 
